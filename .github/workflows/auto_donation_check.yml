@@ -8,7 +8,11 @@ on:
     # Chạy mỗi ngày lúc 16:40 UTC. Tương đương 23:40 ICT (GMT+7)
     - cron: '40 16 * * *' 
   workflow_dispatch: # Cho phép bạn bấm nút Run thủ công trên trang GitHub
-
+  
+# 💡 THÊM KHỐI NÀY VÀO ĐÂY 💡
+permissions:
+  contents: write # Cấp quyền ghi (write) cho nội dung (contents) của Repository
+  
 jobs:
   check-and-commit:
     runs-on: ubuntu-latest
