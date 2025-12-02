@@ -226,7 +226,12 @@
     <div class="flex flex-col md:flex-row gap-4">
         
         <div class="w-full md:w-1/2 bg-slate-900 p-4 rounded-lg border border-slate-700">
-            <h3 class="font-bold text-green-400 mb-2 border-b border-slate-700 pb-2">1. Cấu hình & Soi vị trí</h3>
+            <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
+                <h3 class="font-bold text-green-400">1. Cấu hình & Soi vị trí</h3>
+                <button onclick="stopSound()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1 rounded shadow transition flex items-center gap-1">
+                    <span>🔕 Dừng Loa</span>
+                </button>
+            </div>
             
             <div class="grid grid-cols-1 gap-2 mb-3">
                 <div class="flex gap-2 items-center">
@@ -314,7 +319,7 @@
                     </summary>
                     <div class="absolute right-4 mt-2 w-full max-w-md bg-slate-800 p-4 rounded-lg shadow-xl border border-slate-600 z-50">
                         <label class="text-xs  mb-1 block">URL File JSON History (GitHub Raw)</label>
-                        <input type="url" id="sync-url-input" value="https://raw.githubusercontent.com/minhluan0010/Cmanga-Game-Dashboard/main/donation_history.json" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-xs text-white mb-2">
+                        <input type="url" value="https://raw.githubusercontent.com/minhluan0010/Cmanga-Game-Dashboard/main/donation_history.json" id="sync-url-input" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-xs text-white mb-2">
                         <button onclick="syncFromGithubToLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded font-bold">
                             Đồng bộ ngay (GitHub → Local)
                         </button>
@@ -476,17 +481,47 @@ function getGuildAvatarUrl(avatarFile) {
         return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
     }
 
-    // Helper: Play Sound
+    // --- AUDIO CONTROL FUNCTIONS ---
+
+    // Hàm phát âm thanh (Cập nhật: Reset về 0 trước khi phát để tránh lỗi)
     function playSound(type) {
         const audio = document.getElementById('audio-player');
-        audio.src = (type === 'vip') ? SOUND_VIP : SOUND_READY;
-        audio.play().catch(e => console.log("Audio play failed (interaction needed):", e));
+        if (!audio) return;
+
+        // Dừng âm thanh cũ nếu đang chạy
+        audio.pause();
+        audio.currentTime = 0;
+
+        // Chọn nguồn âm thanh
+        if (type === 'vip') audio.src = localStorage.getItem('sound_vip') || SOUND_VIP;
+        else if (type === 'robbed') audio.src = document.getElementById('sound-robbed').value;
+        else audio.src = localStorage.getItem('sound_ready') || SOUND_READY;
+        
+        // Phát
+        audio.play().catch(e => console.log("Audio play failed (User interaction needed):", e));
     }
+
+    // Hàm Test âm thanh (Cập nhật: Reset về 0 trước khi phát)
     function testSound(inputId) {
         const url = document.getElementById(inputId).value;
         const audio = document.getElementById('audio-player');
+        if (!audio) return;
+
+        audio.pause();
+        audio.currentTime = 0;
+        
         audio.src = url;
-        audio.play();
+        audio.play().catch(e => alert("Không thể phát âm thanh. Link có thể bị lỗi hoặc trình duyệt chặn."));
+    }
+
+    // [MỚI] Hàm Dừng Âm Thanh
+    function stopSound() {
+        const audio = document.getElementById('audio-player');
+        if (audio) {
+            audio.pause();       // Tạm dừng
+            audio.currentTime = 0; // Tua về đầu
+            console.log("Đã dừng âm thanh thủ công.");
+        }
     }
 
     // ================= 1. HOLY WAR LOGIC =================
