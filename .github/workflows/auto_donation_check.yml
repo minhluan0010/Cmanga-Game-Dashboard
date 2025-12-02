@@ -1,1 +1,43 @@
 
+# File: .github/workflows/auto_donation_check.yml
+
+name: Daily Donation Checker
+
+on:
+  schedule:
+    # Chạy mỗi ngày lúc 16:40 UTC. Tương đương 23:40 ICT (GMT+7)
+    - cron: '40 16 * * *' 
+  workflow_dispatch: # Cho phép bạn bấm nút Run thủ công trên trang GitHub
+
+jobs:
+  check-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Cần token để đọc file history.json và commit lại
+          token: ${{ secrets.GITHUB_TOKEN }} 
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      # Cài đặt thư viện node-fetch (dùng để gọi API)
+      - name: Install dependencies
+        run: npm install node-fetch
+
+      - name: Execute Donation Checker Script
+        run: node donation_checker.js
+        env:
+          # Đặt biến môi trường cho script
+          API_DOMAIN: cmangax8.com 
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          # Chỉ commit nếu file donation_history.json bị thay đổi
+          file_pattern: donation_history.json
+          commit_message: "Auto: Update daily donation history"
+          branch: main # Thay thế bằng tên branch chính của bạn (main/master)
