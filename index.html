@@ -1,1 +1,1474 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cmanga Game Dashboard All-in-One</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #fff; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        /* Tab Active State */
+        .tab-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        /* Custom Classes for Top Rankings */
+        .top-1 { background-color: #218509 !important; color: #fff !important; font-weight: 900; }
+        .top-2 { background-color: #2d89ad !important; color: #fff !important; font-weight: 700; }
+        .top-3 { background-color: #0e4dc1 !important; color: #fff !important; font-weight: 700; }
+        
+        .loader {
+            border: 3px solid #334155;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px; height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Table Styles */
+        .data-table th { position: sticky; top: 0; background-color: #1e293b; z-index: 10; }
+		/* --- Thêm vào bên trong thẻ <style> --- */
 
+/* CSS cho bảng thống kê tháng (Sticky Columns) */
+.stats-table th, .stats-table td {
+    text-align: center;
+    padding: 10px 8px;
+    white-space: nowrap;
+}
+/* Ghim 2 cột đầu tiên (ID và Tên) */
+.stats-table th:nth-child(1), .stats-table td:nth-child(1) {
+    position: sticky; left: 0; z-index: 10; background-color: #1e293b; /* slate-800 */
+    text-align: left;
+}
+.stats-table th:nth-child(2), .stats-table td:nth-child(2) {
+    position: sticky; left: 0; z-index: 10; background-color: #1e293b;
+    text-align: left;
+    left: 0; /* Trong mobile có thể cần chỉnh lại, nhưng PC thì OK */
+}
+/* Header của bảng dính lên trên cùng */
+.stats-table thead th {
+    position: sticky; top: 0; z-index: 20; background-color: #334155; /* slate-700 */
+}
+/* --- Thêm vào bên trong thẻ <style> --- */
+
+/* Scrollbar container cho bảng */
+.hw-table-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid #334155; /* slate-700 */
+    border-radius: 0.5rem;
+}
+
+/* Màu số linh thạch */
+.linhthach-text {
+    font-size: 0.75rem; /* text-xs */
+    background-color: #334155;
+    color: #38bdf8; /* sky-400 */
+    padding: 2px 8px;
+    border-radius: 9999px;
+    margin-left: 8px;
+}
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-slate-800 border-b border-slate-700 p-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold text-blue-400">⚔️ Game Tools Hub</h1>
+            <span class="text-xs bg-slate-700 px-2 py-1 rounded " id="server-status">Connecting...</span>
+        </div>
+        
+        <div class="flex items-center gap-2 w-full md:w-auto">
+            <label class="text-xs  whitespace-nowrap">API Domain:</label>
+            <input type="text" id="global-domain" class="bg-slate-900 border border-slate-600 rounded px-3 py-1 text-sm w-full md:w-48 focus:outline-none focus:border-blue-500" placeholder="cmangax8.com" value="cmangax8.com">
+            <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition">Lưu</button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-16 md:w-64 bg-slate-900 border-r border-slate-700 flex flex-col shrink-0 transition-all">
+            <nav class="flex-1 p-2 space-y-1">
+                <button onclick="switchTab('home')" class="tab-btn active w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-800 text-gray-300 transition text-left border border-transparent">
+                    <span>🏠</span> <span class="hidden md:inline">Trang Chủ</span>
+                </button>
+                <button onclick="switchTab('holywar')" class="tab-btn w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-800 text-gray-300 transition text-left border border-transparent">
+                    <span>⚖️</span> <span class="hidden md:inline">Thánh Chiến</span>
+                </button>
+                <button onclick="switchTab('minerals')" class="tab-btn w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-800 text-gray-300 transition text-left border border-transparent">
+                    <span>💎</span> <span class="hidden md:inline">Soi Khoáng & Theo Dõi</span>
+                </button>
+                <button onclick="switchTab('donation')" class="tab-btn w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-800 text-gray-300 transition text-left border border-transparent">
+                    <span>💰</span> <span class="hidden md:inline">Cống Vàng Tông</span>
+                </button>
+                <button onclick="switchTab('guildwar')" class="tab-btn w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-800 text-gray-300 transition text-left border border-transparent">
+                    <span>🏰</span> <span class="hidden md:inline">Điểm Tông Chiến</span>
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-700 text-xs  text-center hidden md:block">
+                All-in-One V1.0
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto bg-slate-800 relative p-4">
+            
+            <div id="tab-home" class="tab-content block space-y-6 max-w-4xl mx-auto mt-10 text-center">
+                <h2 class="text-3xl font-bold text-white mb-4">Chào mừng đến với Bộ Công Cụ Game</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div onclick="switchTab('holywar')" class="bg-slate-700 p-6 rounded-xl hover:bg-slate-600 cursor-pointer transition shadow-lg border border-slate-600">
+                        <div class="text-4xl mb-3">⚖️</div>
+                        <h3 class="text-xl font-bold text-blue-300">Thánh Chiến</h3>
+                        <p class=" text-sm mt-2">Xem tỉ số, danh sách đóng góp Angel/Devil và lịch sử trận đấu.</p>
+                    </div>
+                    <div onclick="switchTab('minerals')" class="bg-slate-700 p-6 rounded-xl hover:bg-slate-600 cursor-pointer transition shadow-lg border border-slate-600">
+                        <div class="text-4xl mb-3">💎</div>
+                        <h3 class="text-xl font-bold text-green-300">Khoáng & Theo Dõi</h3>
+                        <p class=" text-sm mt-2">Quét khoáng VIP, tự động canh giờ thu hoạch và báo động âm thanh.</p>
+                    </div>
+                    <div onclick="switchTab('donation')" class="bg-slate-700 p-6 rounded-xl hover:bg-slate-600 cursor-pointer transition shadow-lg border border-slate-600">
+                        <div class="text-4xl mb-3">💰</div>
+                        <h3 class="text-xl font-bold text-yellow-300">Check Cống Vàng</h3>
+                        <p class=" text-sm mt-2">Kiểm tra thành viên tông môn đã cống hiến hôm nay chưa.</p>
+                    </div>
+                    <div onclick="switchTab('guildwar')" class="bg-slate-700 p-6 rounded-xl hover:bg-slate-600 cursor-pointer transition shadow-lg border border-slate-600">
+                        <div class="text-4xl mb-3">🏰</div>
+                        <h3 class="text-xl font-bold text-red-300">Điểm Tông Chiến</h3>
+                        <p class=" text-sm mt-2">Xem xếp hạng điểm đóng góp tông môn chiến.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-holywar" class="tab-content hidden h-full flex flex-col pb-20">
+    <div class="flex justify-between items-center mb-4 bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-lg">
+        <div>
+            <h2 id="hw-title" class="text-xl font-bold text-blue-400">Thánh Chiến (--:00)</h2>
+            <div class="text-xs  mt-1" id="hw-status">Đang chờ khởi tạo...</div>
+        </div>
+        <div class="text-right">
+            <div id="hw-clock" class="text-3xl font-mono font-bold text-white tracking-wider">--:--:--</div>
+            <div class="text-xs  uppercase tracking-widest mt-1">Realtime Server</div>
+        </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-4 h-full overflow-hidden">
+        
+        <div class="w-full lg:w-2/3 flex flex-col gap-4 overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden">
+                
+                <div class="bg-slate-900 rounded-xl border border-slate-700 flex flex-col overflow-hidden shadow-lg relative group">
+                    <div class="p-3 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 text-center">
+                        <h3 class="font-bold text-sky-400 text-lg flex justify-center items-center">
+                            😇 Angel <span id="angel-gems" class="linhthach-text hidden"></span>
+                        </h3>
+                        <div class="text-sm  mt-1">Tổng: <span id="angel-total" class="text-white font-mono font-bold">0</span></div>
+                    </div>
+                    <div class="overflow-y-auto flex-1 p-0 hw-table-container border-0">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs  uppercase bg-slate-800 sticky top-0">
+                                <tr><th class="p-3">Tên</th><th class="p-3 text-right">Vàng</th><th class="p-3">Guild</th></tr>
+                            </thead>
+                            <tbody id="angel-list" class="divide-y divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl border border-slate-700 flex flex-col overflow-hidden shadow-lg relative group">
+                    <div class="p-3 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 text-center">
+                        <h3 class="font-bold text-red-500 text-lg flex justify-center items-center">
+                            😈 Devil <span id="devil-gems" class="linhthach-text hidden"></span>
+                        </h3>
+                        <div class="text-sm  mt-1">Tổng: <span id="devil-total" class="text-white font-mono font-bold">0</span></div>
+                    </div>
+                    <div class="overflow-y-auto flex-1 p-0 hw-table-container border-0">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs  uppercase bg-slate-800 sticky top-0">
+                                <tr><th class="p-3">Tên</th><th class="p-3 text-right">Vàng</th><th class="p-3">Guild</th></tr>
+                            </thead>
+                            <tbody id="devil-list" class="divide-y divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-1/3 bg-slate-900 rounded-xl border border-slate-700 flex flex-col overflow-hidden shadow-lg">
+            <div class="p-4 bg-slate-800 border-b border-slate-700">
+                <h3 class="font-bold text-gray-200 text-center uppercase tracking-wider mb-3">Lịch Sử Đối Đầu</h3>
+                <div class="flex justify-between text-md mb-2 px-2">
+                    <span class="text-sky-400 font-bold">😇 Angel: <span id="angel-wins">0</span></span>
+                    <span class="text-red-500 font-bold">😈 Devil: <span id="devil-wins">0</span></span>
+                </div>
+                <div class="flex justify-between text-md border-t border-slate-600 pt-2 px-2">
+                    <span>Tổng A: <span id="angel-total-hist" class="text-sky-400">0</span></span>
+                    <span>Tổng D: <span id="devil-total-hist" class="text-red-500">0</span></span>
+                </div>
+            </div>
+            <div class="overflow-y-auto flex-1 p-0">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs  uppercase bg-slate-800 sticky top-0 z-10">
+                        <tr>
+                            <th class="p-3">Ngày</th>
+                            <th class="p-3">Giờ</th>
+                            <th class="p-3 text-center">Thắng</th>
+                            <th class="p-3 text-right">Vàng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hw-history-list" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+            <div id="tab-minerals" class="tab-content hidden space-y-6 pb-20">
+    <div class="flex flex-col md:flex-row gap-4">
+        
+        <div class="w-full md:w-1/2 bg-slate-900 p-4 rounded-lg border border-slate-700">
+            <h3 class="font-bold text-green-400 mb-2 border-b border-slate-700 pb-2">1. Cấu hình & Soi vị trí</h3>
+            
+            <div class="grid grid-cols-1 gap-2 mb-3">
+                <div class="flex gap-2 items-center">
+                    <label class="text-xs text-gray-500 w-24">Đủ 60p:</label>
+                    <input type="text" id="sound-ready" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">
+                    <button onclick="testSound('sound-ready')" class="text-xs bg-slate-700 px-2 py-1 rounded">Test</button>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <label class="text-xs text-gray-500 w-24">Có đồ VIP:</label>
+                    <input type="text" id="sound-vip" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3">
+                    <button onclick="testSound('sound-vip')" class="text-xs bg-slate-700 px-2 py-1 rounded">Test</button>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <label class="text-xs text-red-500 w-24 font-bold">Bị Cướp/Mất:</label>
+                    <input type="text" id="sound-robbed" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3">
+                    <button onclick="testSound('sound-robbed')" class="text-xs bg-slate-700 px-2 py-1 rounded">Test</button>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mb-2">
+                <input type="text" id="miner-search-id" placeholder="Nhập ID nhân vật..." class="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 focus:outline-none text-white">
+                <button onclick="minerals_searchOne()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white font-bold whitespace-nowrap">🔍 Soi Tìm Tầng</button>
+            </div>
+             <button onclick="minerals_scanAll()" class="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded text-gray-300 font-bold text-xs border border-slate-600">Quét toàn bộ 11 Tầng (Tìm đồ VIP)</button>
+             <div id="scan-status" class="text-xs text-center mt-1 text-gray-400 h-4"></div>
+        </div>
+
+        <div class="w-full md:w-1/2 bg-slate-900 p-4 rounded-lg border border-slate-700 shadow-lg border-l-4 border-l-yellow-600">
+            <h3 class="font-bold text-yellow-400 mb-2 border-b border-slate-700 pb-2">2. Theo Dõi Tự Động (Auto Monitor)</h3>
+            
+            <div class="flex gap-2 mb-2">
+                <input type="text" id="monitor-input-id" placeholder="ID Nhân vật" class="w-3/5 bg-slate-800 border border-slate-600 rounded px-3 py-1 focus:outline-none text-sm text-white">
+                <input type="number" id="monitor-input-area" placeholder="Tầng (1-11)" class="w-2/5 bg-slate-800 border border-slate-600 rounded px-3 py-1 focus:outline-none text-sm text-white" min="1" max="11">
+                <button onclick="monitor_add()" class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-white font-bold text-sm whitespace-nowrap">Thêm</button>
+            </div>
+
+            <div class="overflow-y-auto max-h-64 border border-slate-700 rounded bg-slate-800">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-700 text-xs uppercase sticky top-0 text-gray-300">
+                        <tr>
+                            <th class="p-2">ID</th>
+                            <th class="p-2 text-center">Tầng</th>
+                            <th class="p-2 text-center">Time</th>
+                            <th class="p-2 text-right">VIP</th>
+                            <th class="p-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="monitor-list" class="divide-y divide-slate-700/50">
+                        </tbody>
+                </table>
+            </div>
+            <div class="text-xs text-gray-500 mt-2 italic flex justify-between">
+                <span>* Tự động check mỗi 60s.</span>
+                <span id="monitor-last-check">---</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="minerals-result-area" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+        </div>
+</div>
+
+            <div id="tab-donation" class="tab-content hidden space-y-6 pb-20">
+    
+    <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
+        <div class="flex flex-col lg:flex-row gap-4 items-end">
+            <div class="w-full lg:w-1/3">
+                <label class="text-xs  font-bold uppercase tracking-wider mb-1 block">ID Tông Môn</label>
+                <input type="text" id="donate-guild-id" 
+                       class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" 
+                       placeholder="VD: 64">
+            </div>
+
+            <button onclick="donation_check(true)" 
+                    class="w-full lg:w-auto bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-bold h-[42px] shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                Kiểm tra ngay
+            </button>
+
+             <div class="w-full lg:w-auto ml-auto">
+                 <details class="group">
+                    <summary class="flex items-center gap-2 cursor-pointer text-xs text-blue-400 hover:text-blue-300 transition select-none">
+                        <span>⚙️ Cấu hình Đồng bộ (GitHub)</span>
+                        <span class="transition group-open:rotate-180">▼</span>
+                    </summary>
+                    <div class="absolute right-4 mt-2 w-full max-w-md bg-slate-800 p-4 rounded-lg shadow-xl border border-slate-600 z-50">
+                        <label class="text-xs  mb-1 block">URL File JSON History (GitHub Raw)</label>
+                        <input type="url" id="sync-url-input" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-xs text-white mb-2">
+                        <button onclick="syncFromGithubToLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded font-bold">
+                            Đồng bộ ngay (GitHub → Local)
+                        </button>
+                    </div>
+                 </details>
+             </div>
+        </div>
+        <div class="text-xs  mt-2 italic" id="auto-check-status"></div>
+    </div>
+
+    <div class="flex flex-col items-center justify-center py-4 animate-fade-in">
+        <img id="guild-avatar-img" class="w-24 h-24 rounded-full border-4 border-slate-700 shadow-2xl object-cover mb-3" src="https://placehold.co/96x96/1e293b/cbd5e1?text=..." alt="Guild Logo">
+        <h2 id="guild-name-display" class="text-2xl font-bold text-white tracking-tight">---</h2>
+        <span class="text-xs bg-slate-700 text-gray-300 px-2 py-1 rounded mt-1">ID: <span id="guild-id-display">--</span></span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group">
+            <div class="absolute right-0 top-0 p-4 transition text-6xl">👥</div>
+            <div class="text-sm  uppercase tracking-wider font-semibold">Thành viên</div>
+            <div id="donate-total" class="text-3xl font-bold text-white mt-1">0</div>
+        </div>
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group">
+            <div class="absolute right-0 top-0 p-4 transition text-6xl text-green-500">💰</div>
+            <div class="text-sm  uppercase tracking-wider font-semibold">Đã cống hôm nay</div>
+            <div id="donate-done" class="text-3xl font-bold text-green-400 mt-1">0</div>
+        </div>
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group">
+            <div class="absolute right-0 top-0 p-4 transition text-6xl text-blue-500">📊</div>
+            <div class="text-sm  uppercase tracking-wider font-semibold">Tỷ lệ hoàn thành</div>
+            <div id="donate-percent" class="text-3xl font-bold text-blue-400 mt-1">0%</div>
+        </div>
+    </div>
+
+    <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
+        <div class="p-4 bg-slate-800/50 border-b border-slate-700 flex justify-between items-center">
+            <h3 class="font-bold text-white flex items-center gap-2">
+                <span class="w-2 h-6 bg-teal-500 rounded-full inline-block"></span>
+                Danh Sách Cống Hiến Hôm Nay
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left ">
+                <thead class="text-xs text-gray-300 uppercase bg-slate-800/80">
+                    <tr>
+                        <th class="px-6 py-3">Thành viên</th> <th class="px-6 py-3">Chức vụ</th>
+                        <th class="px-6 py-3 text-right">Vàng Cống</th>
+                        <th class="px-6 py-3 text-right">Online cuối</th>
+                    </tr>
+                </thead>
+                <tbody id="donate-list" class="divide-y divide-slate-700">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
+        <div class="p-4 bg-slate-800/50 border-b border-slate-700">
+             <h3 class="font-bold text-white flex items-center gap-2" id="monthly-stats-title">
+                <span class="w-2 h-6 bg-blue-500 rounded-full inline-block"></span>
+                Thống kê tháng...
+            </h3>
+        </div>
+        <div class="overflow-x-auto max-h-[600px]"> <table class="w-full text-sm stats-table border-collapse">
+                <thead class="bg-slate-800 text-xs uppercase text-gray-300 sticky top-0 z-20" id="monthly-stats-header">
+                    </thead>
+                <tbody id="monthly-stats-list" class="divide-y divide-slate-700">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+            <div id="tab-guildwar" class="tab-content hidden space-y-4">
+                 <div class="bg-slate-900 p-4 rounded-lg border border-slate-700 flex flex-col sm:flex-row gap-4 items-end">
+                    <div class="w-full sm:w-1/2">
+                        <label class="text-xs ">Tên Tông Môn (Chính xác)</label>
+                        <input type="text" id="gw-name-input" class="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white" placeholder="VD: TênGuild...">
+                    </div>
+                    <button onclick="guildwar_filter()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-bold w-full sm:w-auto h-[42px]">Lọc Điểm</button>
+                </div>
+                <div id="gw-result" class="bg-slate-900 rounded-lg border border-slate-700 p-4 min-h-[200px]">
+                    <p class=" text-center italic">Nhập tên Guild và bấm Lọc để xem điểm.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <audio id="audio-player"></audio>
+
+<script>
+// --- Helper Functions mới ---
+function getAvatarUrl(avatarFile) {
+    if (!avatarFile || avatarFile === 'default.png') return 'https://placehold.co/64x64/374151/e5e7eb?text=?';
+    return `https://${API_DOMAIN}/assets/tmp/avatar/${avatarFile}`;
+}
+function getGuildAvatarUrl(avatarFile) {
+    if (!avatarFile || avatarFile === 'default.png') return 'https://placehold.co/96x96/1e293b/cbd5e1?text=G';
+    return `https://${API_DOMAIN}/assets/tmp/game/guild/${avatarFile}`;
+}
+    // ================= GLOBAL SETTINGS =================
+    let API_DOMAIN = localStorage.getItem('cmanga_api_domain') || 'cmangax8.com';
+    let SOUND_READY = localStorage.getItem('sound_ready') || 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+    let SOUND_VIP = localStorage.getItem('sound_vip') || 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3';
+    let CURRENT_DONATION_GUILD_ID = localStorage.getItem('donate_guild_id') || '';
+	// ... (Các biến API_DOMAIN, SOUND_READY, v.v.) ...
+	const AUTO_CHECK_GUILDS = ['64', '40']; // ID của các tông được tự động lưu trên GitHub
+	const GITHUB_HISTORY_URL = `https://raw.githubusercontent.com/minhluan0010/Cmanga-Game-Dashboard/main/donation_history.json`; 
+	// !!! QUAN TRỌNG: THAY THẾ <YOUR_USERNAME> VÀ <YOUR_REPO_NAME> BẰNG CỦA BẠN !!!
+
+	const DONATION_STORAGE_KEY = 'cmanga_donation_history_v3_local'; // Dùng cho dữ liệu nhập tay
+
+	let SHARED_GITHUB_HISTORY = {}; // Dữ liệu lịch sử được tải về từ GitHub
+
+    // Init inputs
+    document.getElementById('global-domain').value = API_DOMAIN;
+    // ... (Init for sound/monitor not shown for brevity) ...
+    document.getElementById('donate-guild-id').value = CURRENT_DONATION_GUILD_ID;
+
+    function saveSettings() {
+        const newDomain = document.getElementById('global-domain').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+        API_DOMAIN = newDomain;
+        localStorage.setItem('cmanga_api_domain', API_DOMAIN);
+        
+        SOUND_READY = document.getElementById('sound-ready').value;
+        SOUND_VIP = document.getElementById('sound-vip').value;
+        localStorage.setItem('sound_ready', SOUND_READY);
+        localStorage.setItem('sound_vip', SOUND_VIP);
+
+        alert('Đã lưu cấu hình!');
+        location.reload(); // Reload to apply
+    }
+
+    function getApiUrl(path) {
+        return `https://${API_DOMAIN}${path}`;
+    }
+
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active', 'bg-slate-800'));
+        
+        // Show selected
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        
+        // Active button style
+        // Simple iteration to find the button calling this or by index (simplified here)
+        const buttons = document.querySelectorAll('.tab-btn');
+        if(tabName === 'home') buttons[0].classList.add('active');
+        if(tabName === 'holywar') { buttons[1].classList.add('active'); initHolyWar(); }
+        if(tabName === 'minerals') { buttons[2].classList.add('active'); initMinerals(); }
+        if(tabName === 'donation') buttons[3].classList.add('active');
+        if(tabName === 'guildwar') buttons[4].classList.add('active');
+    }
+
+    // Helper: Number format
+    function formatNumber(num) {
+        return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    }
+
+    // Helper: Play Sound
+    function playSound(type) {
+        const audio = document.getElementById('audio-player');
+        audio.src = (type === 'vip') ? SOUND_VIP : SOUND_READY;
+        audio.play().catch(e => console.log("Audio play failed (interaction needed):", e));
+    }
+    function testSound(inputId) {
+        const url = document.getElementById(inputId).value;
+        const audio = document.getElementById('audio-player');
+        audio.src = url;
+        audio.play();
+    }
+
+    // ================= 1. HOLY WAR LOGIC =================
+    // ================= 1. HOLY WAR LOGIC (NÂNG CẤP) =================
+    let hwClockInterval = null;
+    let hwAutoRefreshInterval = null;
+    let hwIsRefreshing = false; // Trạng thái đang auto refresh (phút 55 -> 00)
+    let hwIsInit = false;
+
+    function initHolyWar() {
+        if (hwIsInit) return;
+        hwIsInit = true;
+        
+        // Khởi động đồng hồ ngay lập tức
+        clockManager(); 
+        hwClockInterval = setInterval(clockManager, 1000);
+        
+        // Tải dữ liệu lần đầu
+        loadAllHolyWarData();
+    }
+
+    // --- Hàm quản lý thời gian & Logic tự động refresh ---
+    function clockManager() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = now.getMinutes();
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        // Update UI Đồng hồ
+        const clockEl = document.getElementById('hw-clock');
+        if(clockEl) clockEl.textContent = `${hours}:${String(minutes).padStart(2, '0')}:${seconds}`;
+        
+        // Update Tiêu đề trận tiếp theo
+        const nextHour = String((now.getHours() + 1) % 24).padStart(2, '0');
+        const titleEl = document.getElementById('hw-title');
+        if(titleEl) titleEl.textContent = `Thánh Chiến (${nextHour}:00)`;
+
+        // --- LOGIC QUAN TRỌNG: Tự động Refresh từ phút 55 ---
+        
+        // 1. Kích hoạt chế độ nhanh (phút 55 trở đi)
+        if (minutes >= 55 && !hwIsRefreshing) {
+            hwIsRefreshing = true;
+            document.getElementById('hw-status').textContent = "⚡ CHẾ ĐỘ CAO ĐIỂM: Cập nhật 30s/lần";
+            document.getElementById('hw-status').className = "text-xs text-yellow-400 font-bold animate-pulse mt-1";
+            
+            // Gọi ngay lập tức
+            fetchHolyWarContributions();
+            // Đặt lịch 30s
+            hwAutoRefreshInterval = setInterval(fetchHolyWarContributions, 30000);
+        }
+
+        // 2. Reset chế độ (Qua giờ mới, phút 00 giây 30)
+        // (Chờ 30s để server game kịp tính toán xong kết quả)
+        if (minutes === 0 && now.getSeconds() >= 30 && hwIsRefreshing) {
+            hwIsRefreshing = false;
+            clearInterval(hwAutoRefreshInterval); // Dừng 30s
+            
+            document.getElementById('hw-status').textContent = "Đã qua giờ mới. Đang tải lại lịch sử...";
+            document.getElementById('hw-status').className = "text-xs text-green-400 mt-1";
+
+            // Tải lại toàn bộ (bao gồm Lịch sử mới)
+            loadAllHolyWarData();
+        }
+    }
+
+    // --- Hàm tải TẤT CẢ (Lịch sử + Điểm) ---
+    async function loadAllHolyWarData() {
+        document.getElementById('hw-status').textContent = "Đang tải dữ liệu...";
+        await Promise.all([fetchHolyWarHistory(), fetchHolyWarContributions()]);
+        if (!hwIsRefreshing) {
+            document.getElementById('hw-status').textContent = "Trạng thái: Chờ (Tự động chạy lúc xx:55)";
+            document.getElementById('hw-status').className = "text-xs  mt-1";
+        }
+    }
+
+    // --- Hàm tải LỊCH SỬ (Chỉ cần gọi 1 lần hoặc khi qua giờ) ---
+    async function fetchHolyWarHistory() {
+        try {
+            const res = await fetch(getApiUrl('/api/data?data=game_data'));
+            const data = await res.json();
+            renderHolyWarHistory(data.angel_devil.history);
+        } catch (e) { console.error("History Error", e); }
+    }
+
+    // --- Hàm tải ĐIỂM SỐ & LINH THẠCH (Gọi liên tục) ---
+    async function fetchHolyWarContributions() {
+        try {
+            const [angelRes, devilRes, gemsRes] = await Promise.all([
+                fetch(getApiUrl('/api/score_list?type=ad_angel&limit=100')),
+                fetch(getApiUrl('/api/score_list?type=ad_devil&limit=100')),
+                fetch(getApiUrl('/api/ad_request_remain'))
+            ]);
+
+            const angelData = await angelRes.json();
+            const devilData = await devilRes.json();
+            const gemsData = await gemsRes.json();
+
+            renderHolyWarContributions(angelData, devilData, gemsData);
+            
+            // Cập nhật timestamp
+            if(hwIsRefreshing) {
+                 const t = new Date();
+                 document.getElementById('hw-status').textContent = `⚡ Cập nhật: ${t.getHours()}:${t.getMinutes()}:${t.getSeconds()}`;
+            }
+
+        } catch (e) { console.error("Contribution Error", e); }
+    }
+
+    // --- Render Tables ---
+    function renderHolyWarContributions(angel, devil, gems) {
+        // Render Gems
+        const ag = document.getElementById('angel-gems');
+        const dg = document.getElementById('devil-gems');
+        
+        ag.classList.add('hidden'); dg.classList.add('hidden');
+        ag.textContent = ''; dg.textContent = '';
+
+        if(gems.devil > 0) { 
+            ag.textContent = `-${formatNumber(gems.devil)} 💎`; 
+            ag.classList.remove('hidden'); 
+        }
+        else if(gems.angel > 0) { 
+            dg.textContent = `-${formatNumber(gems.angel)} 💎`; 
+            dg.classList.remove('hidden'); 
+        }
+
+        // Render Angel List
+        let aTotal = 0;
+        document.getElementById('angel-list').innerHTML = angel.map((item, idx) => {
+            const info = JSON.parse(item.info);
+            const score = parseInt(item.score);
+            aTotal += score;
+            const rankClass = idx === 0 ? 'top-1' : (idx === 1 ? 'top-2' : (idx === 2 ? 'top-3' : ''));
+            const rowClass = rankClass || 'hover:bg-slate-700/50 transition';
+            const textClass = rankClass ? 'text-white' : 'text-gray-300';
+            
+            return `<tr class="border-b border-slate-700 ${rowClass}">
+                <td class="p-3 font-medium ${textClass}">${info.name}</td>
+                <td class="p-3 text-right font-mono ${textClass}">${formatNumber(score)}</td>
+                <td class="p-3 text-xs  truncate max-w-[80px]">${info.guild?.name || '-'}</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('angel-total').textContent = formatNumber(aTotal);
+
+        // Render Devil List
+        let dTotal = 0;
+        document.getElementById('devil-list').innerHTML = devil.map((item, idx) => {
+            const info = JSON.parse(item.info);
+            const score = parseInt(item.score);
+            dTotal += score;
+            const rankClass = idx === 0 ? 'top-1' : (idx === 1 ? 'top-2' : (idx === 2 ? 'top-3' : ''));
+            const rowClass = rankClass || 'hover:bg-slate-700/50 transition';
+            const textClass = rankClass ? 'text-white' : 'text-gray-300';
+
+            return `<tr class="border-b border-slate-700 ${rowClass}">
+                <td class="p-3 font-medium ${textClass}">${info.name}</td>
+                <td class="p-3 text-right font-mono ${textClass}">${formatNumber(score)}</td>
+                <td class="p-3 text-xs  truncate max-w-[80px]">${info.guild?.name || '-'}</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('devil-total').textContent = formatNumber(dTotal);
+    }
+
+    function renderHolyWarHistory(historyData) {
+        let aWin=0, dWin=0;
+        let aGoldSum=0, dGoldSum=0;
+        
+        const arr = Object.keys(historyData).map(k => ({...historyData[k], time: new Date(historyData[k].time)}));
+        arr.sort((a,b) => b.time - a.time);
+
+        const html = arr.map(m => {
+            const isAngel = m.team === 'angel';
+            if(isAngel) { aWin++; aGoldSum += m.total; }
+            else { dWin++; dGoldSum += m.total; }
+            
+            const dateStr = `${String(m.time.getDate()).padStart(2,'0')}/${String(m.time.getMonth()+1).padStart(2,'0')}`;
+            const hourStr = `${String(m.time.getHours()).padStart(2,'0')}:00`;
+
+            return `<tr class="hover:bg-slate-800/50 transition">
+                <td class="p-3  font-mono text-xs">${dateStr}</td>
+                <td class="p-3  font-mono text-xs">${hourStr}</td>
+                <td class="p-3 text-center font-bold ${isAngel ? 'text-sky-400' : 'text-red-500'}">
+                    ${isAngel ? '😇' : '😈'} ${m.team.toUpperCase()}
+                </td>
+                <td class="p-3 text-right font-mono text-gray-300">${formatNumber(m.total)}</td>
+            </tr>`;
+        }).join('');
+
+        document.getElementById('hw-history-list').innerHTML = html;
+        document.getElementById('angel-wins').textContent = aWin;
+        document.getElementById('devil-wins').textContent = dWin;
+        document.getElementById('angel-total-hist').textContent = formatNumber(aGoldSum);
+        document.getElementById('devil-total-hist').textContent = formatNumber(dGoldSum);
+    }
+
+
+    // ================= 2. MINERALS LOGIC (NÂNG CẤP) =================
+    // Load config
+    let SOUND_ROBBED = localStorage.getItem('sound_robbed') || 'https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3';
+    document.getElementById('sound-robbed').value = SOUND_ROBBED;
+
+    // Data structure: { id: "...", area: 1, lastStatus: "normal/vip/missing", lastTime: 0 }
+    let monitoredMiners = JSON.parse(localStorage.getItem('monitored_miners_v2') || '[]');
+    let monitorInterval = null;
+
+    function initMinerals() {
+        renderMonitorList();
+        if(!monitorInterval) {
+            monitorInterval = setInterval(monitorLoop, 60000); // 60s loop
+            monitorLoop(); // Run immediately
+        }
+    }
+
+    // --- Monitor Actions ---
+    
+    // Thêm người theo dõi
+    function monitor_add() {
+        const id = document.getElementById('monitor-input-id').value.trim();
+        const area = parseInt(document.getElementById('monitor-input-area').value.trim());
+
+        if(!id || !area) { alert('Vui lòng nhập ID và Tầng!'); return; }
+        if(monitoredMiners.find(m => m.id === id)) { alert('ID này đang được theo dõi rồi.'); return; }
+
+        monitoredMiners.push({ id: id, area: area, lastStatus: 'init', lastTime: 0 });
+        saveMonitor();
+        renderMonitorList();
+        
+        // Reset input
+        document.getElementById('monitor-input-id').value = '';
+        
+        // Check ngay lập tức cho ID mới
+        monitorLoop();
+    }
+    
+    // Thêm nhanh từ nút "Theo Dõi" ở thẻ kết quả
+    function monitor_add_quick(id, area) {
+        document.getElementById('monitor-input-id').value = id;
+        document.getElementById('monitor-input-area').value = area;
+        monitor_add();
+        // Scroll lên bảng theo dõi
+        document.getElementById('monitor-list').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function monitor_remove(id) {
+        if(confirm('Dừng theo dõi ID này?')) {
+            monitoredMiners = monitoredMiners.filter(m => m.id !== id);
+            saveMonitor();
+            renderMonitorList();
+        }
+    }
+
+    function saveMonitor() {
+        localStorage.setItem('monitored_miners_v2', JSON.stringify(monitoredMiners));
+        
+        // Lưu setting âm thanh
+        SOUND_ROBBED = document.getElementById('sound-robbed').value;
+        localStorage.setItem('sound_robbed', SOUND_ROBBED);
+    }
+
+    // Render danh sách theo dõi
+    function renderMonitorList() {
+        const tbody = document.getElementById('monitor-list');
+        if (monitoredMiners.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500 text-xs">Chưa theo dõi ai. Hãy Soi trước rồi thêm vào đây.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = monitoredMiners.map(m => {
+            let statusClass = 'text-gray-300';
+            let timeText = m.lastTime + 'p';
+            
+            // Màu sắc trạng thái
+            if (m.lastStatus === 'missing') {
+                timeText = 'MẤT TÍCH';
+                statusClass = 'text-red-500 font-bold animate-pulse';
+            } else if (m.lastTime >= 60) {
+                statusClass = 'text-green-400 font-bold';
+            }
+
+            return `
+            <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition">
+                <td class="p-2 font-mono text-blue-300 text-xs">${m.id}</td>
+                <td class="p-2 text-center text-gray-400 text-xs">${m.area}</td>
+                <td class="p-2 text-center ${statusClass} text-sm" id="time-${m.id}">${timeText}</td>
+                <td class="p-2 text-right text-xs" id="vip-${m.id}">${m.hasVip ? '💎 VIP' : '-'}</td>
+                <td class="p-2 text-right">
+                    <button onclick="monitor_remove('${m.id}')" class="text-red-400 hover:text-white px-2">×</button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    // --- CORE LOGIC: MONITOR LOOP ---
+    async function monitorLoop() {
+        if (monitoredMiners.length === 0) return;
+        
+        const nowStr = new Date().toLocaleTimeString();
+        document.getElementById('monitor-last-check').textContent = `Check: ${nowStr}`;
+        console.log(`[Miner Monitor] Bắt đầu quét lúc ${nowStr}`);
+
+        // 1. Gom nhóm các tầng cần quét (Tránh gọi API trùng lặp)
+        // Ví dụ: Theo dõi 3 người ở tầng 1, 2 người ở tầng 5 -> Chỉ gọi API tầng 1 và 5.
+        const areasToScan = [...new Set(monitoredMiners.map(m => m.area))];
+        const areaDataCache = {};
+
+        // 2. Tải dữ liệu các tầng cần thiết
+        await Promise.all(areasToScan.map(async (areaId) => {
+            try {
+                const res = await fetch(getApiUrl(`/api/score_list?type=battle_mine&area=${areaId}`));
+                const data = await res.json();
+                areaDataCache[areaId] = data; // Lưu lại kết quả
+            } catch (e) {
+                console.error(`Lỗi tải tầng ${areaId}`, e);
+                areaDataCache[areaId] = null; // Đánh dấu lỗi
+            }
+        }));
+
+        // 3. Kiểm tra từng người trong danh sách
+        monitoredMiners.forEach(miner => {
+            const floorData = areaDataCache[miner.area];
+            
+            // Nếu API lỗi hoặc rỗng, bỏ qua, không báo động (tránh báo ảo)
+            if (!floorData || !Array.isArray(floorData)) return;
+
+            // Tìm nhân vật trong dữ liệu tầng đó
+            const foundData = floorData.find(x => x.target === miner.id);
+
+            if (foundData) {
+                // --> TRƯỜNG HỢP: TÌM THẤY
+                const parsed = JSON.parse(foundData.data);
+                const info = extractMinerInfo(parsed);
+                const minutes = info.times || 0;
+                const hasVip = checkTargetValuable(info.rewards, minutes);
+
+                // Cập nhật trạng thái
+                miner.lastTime = minutes;
+                miner.hasVip = hasVip;
+                
+                // Nếu trước đó đang báo mất tích, giờ thấy lại -> Reset về normal
+                if (miner.lastStatus === 'missing') miner.lastStatus = 'normal';
+
+                // LOGIC BÁO ĐỘNG (SOUND)
+                // 1. Vừa đủ 60p (trước đó < 60)
+                if (miner.lastTime < 60 && minutes >= 60) {
+                    playSound('ready'); 
+                    console.log(`🔔 ID ${miner.id} đủ 60p!`);
+                }
+                // 2. Đã > 60p VÀ Có đồ VIP
+                // (Để tránh spam, có thể thêm cờ check đã báo chưa, nhưng user yêu cầu báo khi có)
+                if (minutes >= 60 && hasVip) {
+                    playSound('vip');
+                }
+
+                // Cập nhật UI dòng đó
+                const timeEl = document.getElementById(`time-${miner.id}`);
+                const vipEl = document.getElementById(`vip-${miner.id}`);
+                if(timeEl) {
+                    timeEl.textContent = `${minutes}p`;
+                    timeEl.className = `p-2 text-center text-sm ${minutes>=60 ? 'text-green-400 font-bold' : 'text-yellow-500'}`;
+                }
+                if(vipEl) vipEl.innerHTML = hasVip ? '<span class="text-yellow-400 font-bold animate-pulse">💎 VIP</span>' : '-';
+
+            } else {
+                // --> TRƯỜNG HỢP: KHÔNG TÌM THẤY (MẤT TÍCH / BỊ CƯỚP)
+                
+                // Chỉ báo động nếu trạng thái trước đó KHÔNG phải là init (mới thêm) và chưa báo missing
+                if (miner.lastStatus !== 'missing' && miner.lastStatus !== 'init') {
+                    console.log(`🚨 ID ${miner.id} đã biến mất khỏi tầng ${miner.area}! (Bị cướp/Thu hồi)`);
+                    playSound('robbed');
+                    
+                    miner.lastStatus = 'missing'; // Đánh dấu đã mất để không báo lại lần sau
+                    
+                    // Cập nhật UI báo đỏ
+                    const timeEl = document.getElementById(`time-${miner.id}`);
+                    if(timeEl) {
+                        timeEl.textContent = 'BỊ CƯỚP!';
+                        timeEl.className = 'p-2 text-center text-red-500 font-bold animate-pulse text-xs';
+                    }
+                } else if (miner.lastStatus === 'init') {
+                    // Mới thêm vào mà không thấy đâu luôn -> Có thể nhập sai tầng hoặc ID
+                    miner.lastStatus = 'missing'; 
+                }
+            }
+        });
+
+        // Lưu lại trạng thái mới nhất
+        saveMonitor();
+    }
+
+    // Cập nhật hàm playSound để hỗ trợ loại 'robbed'
+    function playSound(type) {
+        const audio = document.getElementById('audio-player');
+        if (type === 'vip') audio.src = localStorage.getItem('sound_vip') || SOUND_VIP;
+        else if (type === 'robbed') audio.src = document.getElementById('sound-robbed').value;
+        else audio.src = localStorage.getItem('sound_ready') || SOUND_READY;
+        
+        audio.play().catch(e => console.log("Audio play failed:", e));
+    }
+
+    // --- Search Logic (Giữ nguyên nhưng sửa UI Card) ---
+    async function minerals_searchOne(inputVal) {
+        const query = inputVal || document.getElementById('miner-search-id').value.trim();
+        if(!query) { alert("Nhập ID cần tìm!"); return; }
+        
+        const container = document.getElementById('minerals-result-area');
+        container.innerHTML = '<div class="col-span-full text-center text-yellow-400 py-4"><div class="loader mx-auto mb-2"></div>Đang quét 11 tầng để tìm ID: ' + query + '...</div>';
+
+        // Load all data
+        const promises = [];
+        for(let i=1; i<=11; i++) promises.push(fetch(getApiUrl(`/api/score_list?type=battle_mine&area=${i}`)).then(r=>r.json()).catch(()=>[]));
+        
+        try {
+            const results = await Promise.all(promises);
+            // results là mảng các mảng [[...tang1], [...tang2]]
+            
+            let foundItem = null;
+            let foundArea = null;
+
+            // Tìm trong mảng kết quả
+            for(let i=0; i<results.length; i++) {
+                const areaItems = results[i];
+                const match = areaItems.find(m => m.target === query);
+                if(match) {
+                    foundItem = match;
+                    foundArea = i + 1; // area index bắt đầu từ 0
+                    break;
+                }
+            }
+
+            if(foundItem) {
+                const parsed = JSON.parse(foundItem.data);
+                // Gắn thêm Area vào data để hiển thị
+                parsed.area = foundArea; 
+                container.innerHTML = generateMineCard(parsed, foundItem, false);
+            } else {
+                container.innerHTML = '<div class="col-span-full text-center text-red-400 py-4 bg-slate-800 rounded border border-slate-700">❌ Không tìm thấy người chơi này đang đào khoáng ở bất kỳ tầng nào.</div>';
+            }
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="col-span-full text-center text-red-400">Lỗi kết nối API.</div>';
+        }
+    }
+    
+    // --- Scan All Logic (Giữ nguyên) ---
+    async function minerals_scanAll() {
+        const container = document.getElementById('minerals-result-area');
+        const status = document.getElementById('scan-status');
+        container.innerHTML = '';
+        status.textContent = 'Đang tải dữ liệu 11 tầng...';
+
+        const promises = [];
+        for(let i=1; i<=11; i++) promises.push(fetch(getApiUrl(`/api/score_list?type=battle_mine&area=${i}`)).then(r=>r.json()));
+        
+        try {
+            const results = await Promise.all(promises);
+            const flat = results.flat(); // Chỉ dùng để đếm tổng
+            status.textContent = `Đang lọc VIP trong ${flat.length} mỏ...`;
+
+            let html = '';
+            let count = 0;
+            
+            // Duyệt qua từng tầng để giữ thông tin Area
+            for(let i=0; i<results.length; i++) {
+                const areaItems = results[i];
+                const currentArea = i + 1;
+                
+                areaItems.forEach(m => {
+                    try {
+                        const parsed = JSON.parse(m.data);
+                        parsed.area = currentArea; // Gán tầng thủ công vì API scanAll đôi khi thiếu
+                        const info = extractMinerInfo(parsed);
+                        if(checkTargetValuable(info.rewards, info.times)) {
+                            html += generateMineCard(parsed, m, true);
+                            count++;
+                        }
+                    } catch(e){}
+                });
+            }
+
+            if(count === 0) container.innerHTML = '<div class="col-span-full text-center text-gray-400 py-8">Không có mỏ nào có đồ giá trị (>60p + item).</div>';
+            else container.innerHTML = html;
+            
+            status.textContent = `Tìm thấy ${count} mỏ VIP.`;
+
+        } catch(e) {
+            status.textContent = 'Lỗi tải dữ liệu.';
+        }
+    }
+
+    // --- Helpers: Generate Card (Cập nhật nút Theo Dõi) ---
+    function generateMineCard(data, item, isMini) {
+        const { rewards, times, info, area, rare } = extractMinerInfo(data);
+        const displayArea = area || data.area || '?'; // Lấy tầng chính xác
+        
+        let rewardHtml = '';
+        for (const key in rewards) {
+            const r = rewards[key];
+            if(r.type === 'currency' || r.type === 'item' || r.type === 'material') {
+                const imgUrl = `https://cmangax8.com/assets/img/level/${r.type}/${key}.png`;
+                rewardHtml += `<div class="text-center" title="${key}">
+                    <img src="${imgUrl}" class="h-6 w-auto mx-auto object-contain" onerror="this.style.display='none'">
+                    <span class="text-[10px] block">${r.amount}</span>
+                </div>`;
+            }
+        }
+
+        const avatar = info.avatar ? `https://cmangax8.com/assets/tmp/avatar/${info.avatar}` : 'https://placehold.co/50';
+        const mineImg = `https://cmangax8.com/assets/img/level/icon/mine/${rare||'default'}.png`;
+
+        // Nút Theo Dõi: Truyền cả ID và Tầng vào hàm monitor_add_quick
+        const trackBtn = `
+            <button onclick="monitor_add_quick('${item.target}', ${displayArea})" 
+                class="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-1 rounded flex items-center justify-center gap-1 transition">
+                <span>🔔 Theo dõi</span>
+            </button>
+        `;
+
+        return `
+            <div class="bg-slate-800 rounded-lg overflow-hidden border border-slate-600 shadow-lg flex flex-col relative hover:border-blue-500 transition group">
+                <div class="bg-slate-700 p-2 text-center font-bold text-white text-xs flex justify-between items-center px-3">
+                    <span>Tầng ${displayArea}</span>
+                    <span class="${times>=60?'text-green-400':'text-yellow-400'}">${times} phút</span>
+                </div>
+                <div class="p-3 flex flex-col items-center flex-1">
+                    <div class="relative w-16 h-16 mb-2">
+                         <img src="${mineImg}" class="w-full h-full object-contain opacity-80">
+                         <img src="${avatar}" class="absolute bottom-0 right-0 w-8 h-8 rounded-full border-2 border-slate-700 bg-slate-800">
+                    </div>
+                    <div class="font-bold text-blue-300 text-sm truncate w-full text-center" title="${info.name}">${info.name || 'No Name'}</div>
+                    <div class="text-[10px] text-gray-500 font-mono mb-2 bg-slate-900 px-2 rounded">${item.target}</div>
+                    
+                    <div class="grid grid-cols-4 gap-1 w-full mt-auto pt-2 border-t border-slate-600 min-h-[40px]">
+                        ${rewardHtml || '<span class="col-span-4 text-[10px] text-gray-500 text-center py-2">Chưa có quà</span>'}
+                    </div>
+                    ${trackBtn}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Helper cũ (Giữ nguyên)
+    const rewardsExclusionList = ['medicinal_exp_1', 'medicinal_exp_2', 'medicinal_exp_3', 'job_exp_3'];
+    function extractMinerInfo(data) {
+        let rewards = {};
+        let times = 0;
+        let info = (data.miner && data.miner.info) ? data.miner.info : (data.info || {});
+        if (data.miner && data.miner.reward) { rewards = data.miner.reward; times = data.miner.times || 0; }
+        else if (data.battle && data.battle.reward) { rewards = data.battle.reward; times = data.battle.times || 0; }
+        return { rewards, times, info, area: data.area, rare: data.rare };
+    }
+    function checkTargetValuable(rewards, times) {
+        if (!rewards || times <= 60) return false;
+        for (const key in rewards) {
+            const item = rewards[key];
+            if ((item.type === 'item' || item.type === 'material') && !rewardsExclusionList.includes(key)) return true;
+        }
+        return false;
+    }
+// ================= 4. DONATION LOGIC (UPDATED) =================
+
+// --- Init & Load ---
+async function initDonation() {
+    // 1. Tải lịch sử chung từ GitHub
+    await loadGithubHistory();
+    
+    // 2. Load cài đặt từ LocalStorage (ID tông hiện tại)
+    CURRENT_DONATION_GUILD_ID = document.getElementById('donate-guild-id').value.trim();
+    localStorage.setItem('donate_guild_id', CURRENT_DONATION_GUILD_ID);
+    
+    // Đặt URL mặc định vào ô input
+    const [user, repo] = GITHUB_HISTORY_URL.match(/githubusercontent\.com\/([^/]+)\/([^/]+)\/main/).slice(1, 3);
+    document.getElementById('sync-url-input').value = `https://raw.githubusercontent.com/${user}/${repo}/main/donation_history.json`;
+
+
+    // 3. Hiển thị thống kê cho ID hiện tại
+    if (CURRENT_DONATION_GUILD_ID) {
+        // Tải dữ liệu hôm nay (tương đương bấm check thủ công)
+        donation_check(true, CURRENT_DONATION_GUILD_ID);
+    } else {
+        document.getElementById('monthly-stats-title').textContent = 'Vui lòng nhập ID Tông Môn.';
+        document.getElementById('auto-check-status').textContent = 'Tự động check đã được chuyển sang GitHub Actions (23:40 ICT)';
+    }
+}
+
+// Hàm mới: Tải lịch sử từ GitHub
+async function loadGithubHistory() {
+    try {
+        const url = document.getElementById('sync-url-input').value.trim();
+        if (!url || url.includes('YOUR_USERNAME')) {
+            console.warn("GitHub History URL is not configured or is using placeholder. Skipping auto-load.");
+            SHARED_GITHUB_HISTORY = {};
+            return;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.warn("Could not load GitHub History file. Maybe file doesn't exist yet or URL is wrong.");
+            SHARED_GITHUB_HISTORY = {};
+            return;
+        }
+        SHARED_GITHUB_HISTORY = await response.json();
+        console.log("Loaded shared history from GitHub successfully.");
+    } catch (e) {
+        console.error("Error fetching shared history:", e);
+        SHARED_GITHUB_HISTORY = {};
+    }
+}
+
+
+// --- Core Check Function ---
+async function donation_check(isManual, guildIdToCheck = null) {
+    const guildId = guildIdToCheck || document.getElementById('donate-guild-id').value.trim();
+    if(!guildId) { if(isManual) alert('Nhập ID Guild'); return false; }
+    
+    if (isManual) {
+        CURRENT_DONATION_GUILD_ID = guildId;
+        localStorage.setItem('donate_guild_id', CURRENT_DONATION_GUILD_ID);
+        document.getElementById('guild-id-display').textContent = guildId;
+    }
+
+    const tbody = document.getElementById('donate-list');
+    if (isManual) tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8"><div class="loader mx-auto mb-2"></div>Đang tải dữ liệu...</td></tr>';
+    
+    let success = false;
+    let members = [];
+    let donatedCount = 0;
+    let dailyDonatedIds = {};
+
+    try {
+        // Lấy dữ liệu API
+        const [memRes, infoRes] = await Promise.all([
+            fetch(getApiUrl(`/api/game_guild_member?waiting=0&guild=${guildId}`)),
+            fetch(getApiUrl(`/api/get_data_by_id?table=game_guild&data=data,donate&id=${guildId}`))
+        ]);
+
+        members = await memRes.json();
+        const infoWrap = await infoRes.json();
+        
+        if(!infoWrap.data) throw new Error(`Không tìm thấy Guild ID ${guildId}`);
+        
+        const guildData = JSON.parse(infoWrap.data); // Data tên, avatar guild
+        const donationMap = infoWrap.donate ? JSON.parse(infoWrap.donate) : {};
+        
+        // Cập nhật Header Guild
+        if(isManual) {
+            document.getElementById('guild-name-display').textContent = guildData.name + (guildData.tag ? ` (${guildData.tag})` : '');
+            document.getElementById('guild-avatar-img').src = getGuildAvatarUrl(guildData.avatar);
+        }
+
+        const rows = members.map(m => {
+            const id = m.id_game_character;
+            const info = JSON.parse(m.info); // Lấy info.avatar, info.name
+            const amt = parseInt(donationMap[id] || 0);
+
+            if(amt > 0) {
+                donatedCount++;
+                dailyDonatedIds[id] = true;
+            }
+
+            return {
+                id: id,
+                name: info.name,
+                avatar: info.avatar,
+                role: m.role,
+                amt: amt,
+                lastOnline: m.last_online
+            };
+        });
+        
+        // Lưu lịch sử Local
+        if (donatedCount > 0) { saveDonationHistoryLocal(guildId, dailyDonatedIds); }
+
+        if (isManual) {
+            // Update Stats Cards
+            document.getElementById('donate-total').textContent = members.length;
+            document.getElementById('donate-done').textContent = donatedCount;
+            document.getElementById('donate-percent').textContent = members.length ? ((donatedCount/members.length)*100).toFixed(1)+'%' : '0%';
+
+            // Render Table Hôm Nay
+            rows.sort((a,b) => b.amt - a.amt);
+            tbody.innerHTML = rows.map(r => `
+                <tr class="hover:bg-slate-700/50 transition border-b border-slate-700/50 last:border-0">
+                    <td class="px-6 py-3 flex items-center gap-3">
+                        <img src="${getAvatarUrl(r.avatar)}" class="w-8 h-8 rounded shadow-sm object-cover" onerror="this.src='https://placehold.co/32'"/>
+                        <span class="font-medium text-white">${r.name}</span>
+                    </td>
+                    <td class="px-6 py-3 ">${getRoleName(r.role)}</td>
+                    <td class="px-6 py-3 text-right">
+                        ${r.amt > 0 
+                            ? `<span class="text-green-400 font-bold bg-green-400/10 px-2 py-1 rounded">${formatNumber(r.amt)}</span>` 
+                            : `<span class="text-red-500 text-xs">Chưa cống</span>`}
+                    </td>
+                    <td class="px-6 py-3 text-right  text-xs">${r.lastOnline}</td>
+                </tr>
+            `).join('');
+            
+            // Render Bảng Tháng (Logic Matrix Mới)
+            renderMonthlyStats(guildId, members);
+        }
+        success = true;
+
+    } catch(e) {
+        console.error(e);
+        if (isManual) tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-red-400">Lỗi: ${e.message}</td></tr>`;
+    }
+    return success;
+}
+
+// --- History Storage/Retrieval (LOCAL) ---
+
+function getTodayDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getCurrentMonthKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
+}
+
+// Lấy toàn bộ lịch sử từ Local Storage
+function getAllDonationHistoryLocal() {
+    try {
+        return JSON.parse(localStorage.getItem(DONATION_STORAGE_KEY) || '{}');
+    } catch (e) {
+        console.error("Lỗi parse LocalStorage:", e);
+        return {};
+    }
+}
+
+// Lưu lịch sử cống vàng vào Local Storage
+function saveDonationHistoryLocal(guildId, donatedIds) {
+    const history = getAllDonationHistoryLocal();
+    const monthKey = getCurrentMonthKey();
+    const dateKey = getTodayDate();
+    
+    if (!history[guildId]) history[guildId] = {};
+    if (!history[guildId][monthKey]) history[guildId][monthKey] = {};
+
+    if (Object.keys(donatedIds).length > 0) {
+        history[guildId][monthKey][dateKey] = donatedIds;
+        localStorage.setItem(DONATION_STORAGE_KEY, JSON.stringify(history));
+        console.log(`Donation history saved locally for ${guildId} on ${dateKey}.`);
+    }
+}
+
+
+// --- ONE-WAY SYNCHRONIZATION FUNCTION (GitHub → Local) ---
+async function syncFromGithubToLocal() {
+    const url = document.getElementById('sync-url-input').value.trim();
+    if(!url || url.includes('YOUR_USERNAME')) { alert('Vui lòng kiểm tra lại URL Raw File JSON trên GitHub.'); return; }
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP Error! Status: ${response.status}. Kiểm tra link có phải là link RAW không.`);
+        }
+        const remoteHistory = await response.json();
+
+        if (typeof remoteHistory !== 'object' || remoteHistory === null) {
+            throw new Error('File không phải là định dạng JSON lịch sử hợp lệ.');
+        }
+
+        const localHistory = getAllDonationHistoryLocal();
+        const mergedHistory = {...localHistory}; // Bắt đầu với dữ liệu local
+
+        // Logic hợp nhất (merge): Dữ liệu từ file GitHub sẽ HỢP NHẤT vào Local Storage
+        for (const guildId in remoteHistory) {
+            if (!mergedHistory[guildId]) mergedHistory[guildId] = {};
+            
+            const remoteGuild = remoteHistory[guildId];
+
+            // Hợp nhất danh sách thành viên (cần cho việc hiển thị tên)
+            if(remoteGuild.members) {
+                mergedHistory[guildId].members = remoteGuild.members;
+            }
+
+            // Hợp nhất tháng
+            for (const monthKey in remoteGuild) {
+                if(monthKey === 'members') continue; 
+                
+                if (!mergedHistory[guildId][monthKey]) mergedHistory[guildId][monthKey] = {};
+                
+                const remoteMonth = remoteGuild[monthKey];
+
+                // Hợp nhất ngày (Dữ liệu ngày từ Remote sẽ GHI ĐÈ dữ liệu Local nếu trùng ngày)
+                for (const dateKey in remoteMonth) {
+                    mergedHistory[guildId][monthKey][dateKey] = remoteMonth[dateKey];
+                }
+            }
+        }
+
+        // Lưu lại dữ liệu đã hợp nhất vào Local Storage
+        localStorage.setItem(DONATION_STORAGE_KEY, JSON.stringify(mergedHistory));
+        
+        // Cập nhật biến SHARED_GITHUB_HISTORY để hiển thị thống kê mới nhất
+        SHARED_GITHUB_HISTORY = remoteHistory; 
+        
+        alert('Đồng bộ thành công! Dữ liệu từ GitHub đã được hợp nhất vào Local Storage của trình duyệt.');
+        
+        // Re-render the current guild's stats after successful import
+        if (CURRENT_DONATION_GUILD_ID) {
+            donation_check(true);
+        }
+
+    } catch (e) {
+        alert(`Lỗi Đồng Bộ: ${e.message}`);
+        console.error(e);
+    }
+}
+
+
+// --- Rendering Stats (Sử dụng dữ liệu từ GitHub VÀ Local) ---
+
+async function renderMonthlyStats(guildId, membersList) {
+    // 1. Xác định nguồn dữ liệu (GitHub hay Local)
+    let historySource = getAllDonationHistoryLocal(); // Mặc định local
+    // Nếu có dữ liệu GitHub đã sync, ưu tiên dùng nó
+    if (SHARED_GITHUB_HISTORY[guildId]) {
+        historySource = SHARED_GITHUB_HISTORY;
+    }
+
+    // 2. Chuẩn bị danh sách thành viên đầy đủ (có avatar)
+    const memberMap = membersList.map(m => {
+        const info = JSON.parse(m.info);
+        return {
+            id: m.id_game_character,
+            name: info.name,
+            avatar: info.avatar,
+            role: m.role
+        };
+    }).sort((a,b) => a.role - b.role); // Sắp xếp theo chức vụ
+
+    // 3. Xác định số ngày trong tháng hiện tại
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2,'0')}`;
+    const daysInMonth = new Date(year, month, 0).getDate(); // Số ngày của tháng
+
+    // 4. Lấy dữ liệu lịch sử của tháng này
+    const currentMonthHistory = (historySource[guildId] && historySource[guildId][monthKey]) || {};
+
+    // 5. Render HEADER (Các ngày)
+    const thead = document.getElementById('monthly-stats-header');
+    let headerHTML = `<tr>
+        <th class="p-3 text-left min-w-[50px] bg-slate-800">#</th>
+        <th class="p-3 text-left min-w-[150px] bg-slate-800">Thành viên</th>`;
+    
+    const dateKeys = [];
+    for(let i=1; i<=daysInMonth; i++) {
+        const dayStr = String(i).padStart(2, '0');
+        headerHTML += `<th class="p-2 min-w-[40px] text-center ">${i}</th>`;
+        dateKeys.push(`${monthKey}-${dayStr}`); // VD: 2024-05-01
+    }
+    headerHTML += `</tr>`;
+    thead.innerHTML = headerHTML;
+    document.getElementById('monthly-stats-title').innerHTML = `Thống kê tháng ${month}/${year}`;
+
+    // 6. Render BODY (Dữ liệu từng người)
+    const tbody = document.getElementById('monthly-stats-list');
+    
+    if (memberMap.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${daysInMonth + 2}" class="p-4 text-center">Chưa có dữ liệu thành viên.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = memberMap.map((mem, index) => {
+        let rowHTML = `<tr class="hover:bg-slate-700/50 transition">
+            <td class="p-3  font-mono text-xs">${index+1}</td>
+            <td class="p-3 font-medium text-white flex items-center gap-2">
+                <img src="${getAvatarUrl(mem.avatar)}" class="w-6 h-6 rounded object-cover" onerror="this.src='https://placehold.co/20'"/>
+                <span class="truncate max-w-[120px]" title="${mem.name}">${mem.name}</span>
+            </td>`;
+        
+        // Duyệt từng ngày
+        dateKeys.forEach(dateKey => {
+            // Kiểm tra trong history có ngày này không
+            const dayData = currentMonthHistory[dateKey];
+            // dayData là object { 'ID_Member': true/false/amount } hoặc undefined
+            
+            let cellContent = `<span class="text-slate-600 text-xs">.</span>`;
+            
+            if (dayData && dayData[mem.id]) {
+                // Có cống
+                cellContent = `<span class="text-green-400 font-bold">✔</span>`;
+            } else if (dayData) {
+                // Ngày đó có dữ liệu nhưng ID này không có -> Không cống
+                // (Logic này chỉ đúng nếu ngày đó đã được ghi nhận lịch sử)
+                cellContent = `<span class="text-red-500 font-bold text-xs">x</span>`;
+            }
+
+            // *Lưu ý*: Logic trên GitHub Sync thường chỉ lưu list ID đã cống. 
+            // Nếu muốn hiện dấu X chính xác, cần biết ngày đó "đã check chưa".
+            // Tạm thời: Nếu trong ngày đó có bất kỳ ai cống -> coi là đã check -> ai thiếu là X.
+            // Nếu ngày đó chưa có dữ liệu gì -> hiện dấu chấm.
+            
+            const isDayChecked = dayData && Object.keys(dayData).length > 0;
+            if (isDayChecked && !dayData[mem.id]) {
+                 cellContent = `<span class="text-red-500 font-bold text-xs">✕</span>`;
+            }
+
+            rowHTML += `<td class="p-2 text-center border-l border-slate-700/50">${cellContent}</td>`;
+        });
+
+        rowHTML += `</tr>`;
+        return rowHTML;
+    }).join('');
+}
+
+// --- General Helpers ---
+function getRoleName(r) {
+    return {1:'Tông Chủ',2:'Phó Tông',3:'Trưởng Lão',4:'Thành Viên',5:'Tân Binh'}[r] || r;
+}
+// KHÔNG CẦN setupAutoCheck() nữa vì GitHub Actions đã xử lý.
+
+    // ================= 4. GUILD WAR LOGIC =================
+    async function guildwar_filter() {
+        const name = document.getElementById('gw-name-input').value.trim().toLowerCase();
+        if(!name) { alert('Nhập tên Guild'); return; }
+
+        const container = document.getElementById('gw-result');
+        container.innerHTML = '<div class="text-center p-4">Đang tải danh sách điểm server... (API 1/2)</div>';
+
+        try {
+            // Step 1: Get Score List
+            const scoreRes = await fetch(getApiUrl('/api/score_list?type=guild_battle_player&limit=1000'));
+            const scoreData = await scoreRes.json();
+
+            // Step 2: Find Guild ID from Name in Score List
+            let guildId = null;
+            const scoreMap = {};
+
+            for(const item of scoreData) {
+                const info = JSON.parse(item.info);
+                scoreMap[info.id] = parseInt(item.score);
+                if(!guildId && info.guild && info.guild.name.toLowerCase() === name) {
+                    guildId = info.guild.id;
+                }
+            }
+
+            if(!guildId) throw new Error("Không tìm thấy Guild tên này trong bảng xếp hạng.");
+
+            container.innerHTML = `<div class="text-center p-4 text-blue-400">Tìm thấy Guild ID: ${guildId}. Đang tải thành viên...</div>`;
+
+            // Step 3: Get Members
+            const memRes = await fetch(getApiUrl(`/api/game_guild_member?waiting=0&guild=${guildId}`));
+            const members = await memRes.json();
+
+            // Step 4: Merge
+            const final = members.map(m => {
+                const info = JSON.parse(m.info);
+                return {
+                    name: info.name,
+                    score: scoreMap[info.id] || 0
+                };
+            }).sort((a,b) => b.score - a.score);
+
+            // Step 5: Render
+            let html = `<h3 class="font-bold text-center text-xl mb-4 text-white">Kết quả: ${name.toUpperCase()}</h3>
+            <table class="w-full text-sm">
+                <thead class="bg-slate-800"><tr><th class="p-2 text-left">#</th><th class="p-2 text-left">Tên</th><th class="p-2 text-right">Điểm</th></tr></thead>
+                <tbody>`;
+            
+            html += final.map((item, i) => {
+                let cls = '';
+                if(i===0) cls='top-1'; else if(i===1) cls='top-2'; else if(i===2) cls='top-3';
+                return `<tr class="border-b border-slate-700 hover:bg-slate-700/50 ${cls}">
+                    <td class="p-2">${i+1}</td>
+                    <td class="p-2 font-bold">${item.name}</td>
+                    <td class="p-2 text-right font-mono">${formatNumber(item.score)}</td>
+                </tr>`;
+            }).join('');
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+        } catch(e) {
+            container.innerHTML = `<div class="text-center p-4 text-red-400">Lỗi: ${e.message}</div>`;
+        }
+    }
+
+</script>
+</body>
+</html>
