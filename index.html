@@ -236,18 +236,18 @@
             <div class="grid grid-cols-1 gap-2 mb-3">
                 <div class="flex gap-2 items-center">
                     <label class="text-xs text-gray-500 w-24">Đủ 60p:</label>
-                    <input type="text" id="sound-ready" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">
-                    <button onclick="testSound('sound-ready')" class="text-xs bg-slate-700 px-2 py-1 rounded">Test</button>
+                    <input type="text" id="sound-ready" onchange="saveMonitor()" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="">
+                    <button onclick="testSound('sound-ready')" class="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600">Test</button>
                 </div>
                 <div class="flex gap-2 items-center">
                     <label class="text-xs text-gray-500 w-24">Có đồ VIP:</label>
-                    <input type="text" id="sound-vip" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3">
-                    <button onclick="testSound('sound-vip')" class="text-xs bg-slate-700 px-2 py-1 rounded">Test</button>
+                    <input type="text" id="sound-vip" onchange="saveMonitor()" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="">
+                    <button onclick="testSound('sound-vip')" class="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600">Test</button>
                 </div>
                 <div class="flex gap-2 items-center">
                     <label class="text-xs text-red-500 w-24 font-bold">Bị Cướp/Mất:</label>
-                    <input type="text" id="sound-robbed" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3">
-                    <button onclick="testSound('sound-robbed')" class="text-xs bg-slate-700 px-2 py-1 rounded">Test</button>
+                    <input type="text" id="sound-robbed" onchange="saveMonitor()" class="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs" value="">
+                    <button onclick="testSound('sound-robbed')" class="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600">Test</button>
                 </div>
             </div>
 
@@ -720,21 +720,47 @@ function getGuildAvatarUrl(avatarFile) {
 
     // ================= 2. MINERALS LOGIC (NÂNG CẤP) =================
     // Load config
+    // ================= 2. MINERALS LOGIC (ĐÃ SỬA LỖI LƯU) =================
+    
+    // 1. Khai báo và Load dữ liệu từ LocalStorage
+    let SOUND_READY = localStorage.getItem('sound_ready') || 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+    let SOUND_VIP = localStorage.getItem('sound_vip') || 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3';
     let SOUND_ROBBED = localStorage.getItem('sound_robbed') || 'https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3';
+
+    // 2. Điền giá trị vào ô Input
+    document.getElementById('sound-ready').value = SOUND_READY;
+    document.getElementById('sound-vip').value = SOUND_VIP;
     document.getElementById('sound-robbed').value = SOUND_ROBBED;
 
-    // Data structure: { id: "...", area: 1, lastStatus: "normal/vip/missing", lastTime: 0 }
+    // Data structure
     let monitoredMiners = JSON.parse(localStorage.getItem('monitored_miners_v2') || '[]');
     let monitorInterval = null;
 
     function initMinerals() {
         renderMonitorList();
         if(!monitorInterval) {
-            monitorInterval = setInterval(monitorLoop, 60000); // 60s loop
-            monitorLoop(); // Run immediately
+            monitorInterval = setInterval(monitorLoop, 60000); 
+            monitorLoop(); 
         }
     }
 
+    // --- Hàm Lưu Trữ (Đã cập nhật để lưu cả 3 âm thanh) ---
+    function saveMonitor() {
+        // Lưu danh sách theo dõi
+        localStorage.setItem('monitored_miners_v2', JSON.stringify(monitoredMiners));
+        
+        // Lấy giá trị mới từ Input
+        SOUND_READY = document.getElementById('sound-ready').value;
+        SOUND_VIP = document.getElementById('sound-vip').value;
+        SOUND_ROBBED = document.getElementById('sound-robbed').value;
+
+        // Lưu setting âm thanh vào LocalStorage
+        localStorage.setItem('sound_ready', SOUND_READY);
+        localStorage.setItem('sound_vip', SOUND_VIP);
+        localStorage.setItem('sound_robbed', SOUND_ROBBED);
+        
+        console.log("Đã lưu cấu hình âm thanh và danh sách theo dõi.");
+    }
     // --- Monitor Actions ---
     
     // Thêm người theo dõi
@@ -771,14 +797,6 @@ function getGuildAvatarUrl(avatarFile) {
             saveMonitor();
             renderMonitorList();
         }
-    }
-
-    function saveMonitor() {
-        localStorage.setItem('monitored_miners_v2', JSON.stringify(monitoredMiners));
-        
-        // Lưu setting âm thanh
-        SOUND_ROBBED = document.getElementById('sound-robbed').value;
-        localStorage.setItem('sound_robbed', SOUND_ROBBED);
     }
 
     // Render danh sách theo dõi
